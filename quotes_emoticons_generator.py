@@ -123,10 +123,10 @@ class Quotes():
             # water_mark_text
             # first, *items = water_mark_text.splitlines()
             items = water_mark_text.splitlines()
-
+            
             water_mark_t = list()
             line_count_max = img.width // font_size * 2
-            print("line_count_max:{}".format(line_count_max))
+
             for it in items:
                 # Calculate the pixel size of the string
                 # hans_total = 0
@@ -134,7 +134,6 @@ class Quotes():
                 count = 0
                 new_str = list()
                 line_flag = False
-
                 for s in it:
                     '''
                     # There are actually many Chinese characters, but almost none of them are used. This range is sufficient
@@ -143,46 +142,53 @@ class Quotes():
                     '''
                     if s.isascii(): # 255以下
                         count += 1
-                    elif s == '《':
+                    elif s == '《' or s == "。":
                         count += 1
+                        print(s)
                     elif s == '·':
                         count += 0
                     else:
                         count += 2
-                    if count == line_count_max or count == line_count_max - 1:
+                    if count >= line_count_max - 1:
                         s += '\n'
                         count = 0
                         line_flag = True
                     new_str.append(s)
                 if line_flag:
                     count = line_count_max
-                font_count = len(it) + count
+                font_count = count
                 if font_count > font_count_max:
                     font_count_max = font_count
+                # print("".join(new_str))
                 water_mark_t.append("".join(new_str))
-            print(font_count_max)
             text_width = font_count_max * font_size // 2
             print("text_width: {}".format(text_width))
 
             width = 10
             if text_width < img.width:
                 width = (img.width - text_width) // 2
+            print("to left width: {}".format(width))
 
             water_mark_t = '\n'.join(water_mark_t)
-            lines = len(water_mark_t.split('\n'))
-            text_height = font_size * lines + font_size // 10 * (lines - 1)
+            water_mark_t = water_mark_t.replace('\n\n', '\n')
+            water_mark_t = water_mark_t.replace(' —— ', '  —— ')
+            
+            lines = len(water_mark_t.split('\n'))           
+            row_height = font_size * 0.23
+            import math
+            text_height = math.ceil(font_size * lines + row_height * (lines - 1))
             print("text_height: {}".format(text_height))
-            height = (img.height - text_height) // 2 - 5
+            height = (img.height - text_height) // 2
             if height < 0:
                 height = 0
-            print(height)
+            print("to top height: {}".format(height))
             # add water mark
             draw = ImageDraw.Draw(img)
             # img.width - font_len
              
             draw.text((width, height), water_mark_t, font_color, font=font)
             draw = ImageDraw.Draw(img)
-            print("Add watermark: {}".format(water_mark_text))
+            print("Add watermark: \n{}".format(water_mark_t))
 
             # save to destination file
             img.save(dest_file)
@@ -222,14 +228,59 @@ class Quotes():
 
 
 def get_quotes_from_file(path):
+    if os.path.exists(path):
+        l = list()
+        with open(path, 'r') as f:
+            list_str = f.readlines()
+            for item in list_str:
+                # clean empty lines
+                item = item.strip('\n')
+                if item:
+                    # clean comment lines
+                    item = item.split('#', 1)[0]
+                    item = item.split(' #', 1)[0]
+                    for ch in item:
+                        if u'\u4e00' <= ch <= u'\u9fff':
+                            item = item.replace('--', '——')
+                    if item:
+                        l.append(item)
+        whole_sentence_list = list()
+        whole_sentence = None
+        ignore = False
+        for it in l:
+            if it.find(".") != -1:
+                if it[it.index(".")-1].isdigit():
+                    ignore = False
+                    if whole_sentence:
+                        whole_sentence_list.append(whole_sentence)
+                    whole_sentence = it
+                else:
+                    ignore = True
+                    print("WRONG LINE:  {}".format(it))
+            else:
+                if not ignore:
+                    whole_sentence = whole_sentence + '\n' + it
+        if not ignore:
+            whole_sentence_list.append(whole_sentence) # last sentence.
+        return whole_sentence_list
+    else:
+        with open(path, 'w') as f:
+            f.write('')
+        print("file doesn't exist: [{0}] .\nBut create.".format(path))
+        return list()
+
+def remove_number_from_list(old_list):
     l = list()
+    for i in old_list:
+        l.append(i.split('.')[1])
+        # l.append(i.replace('.', '_'))
     return l
 
 if __name__ == "__main__":
-    quotes_str = '''你的和我交往
- —— 鲁迅 《彷徨·孤独者》'''
-    quotes = Quotes(quotes_str)
-    # (238, 238, 237) wechat background
-    quotes.load_config(font="SourceHanSerif", fontSize="adapted", point="black", fill = (238,238,237), imgSize = (512, 512))
-    quotes.run()
-    
+    l = get_quotes_from_file("CelebrityQuotes.txt")
+    l = remove_number_from_list(l)
+    for quotes_str in l:
+        quotes = Quotes(quotes_str)
+        # (238, 238, 237) wechat background
+        quotes.load_config(font="SourceHanSerif", fontSize="adapted", point="black", fill = (238,238,237), imgSize = (512, 512))
+        quotes.run()
