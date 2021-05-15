@@ -54,48 +54,46 @@ class Quotes():
         self._fill = None
         self._img_size = None
         
-    def generate_blank_image(self):
+    def generate_src_dest_name(self, tag):
         img_name, *others = self._quotes.splitlines()
         img_name = img_name.strip('\n')
         import re
         rstr = r"[\/\\\:\*\?\"\<\>\| ]"  # '/ \ : * ? " < > |'
         img_name = re.sub(rstr, "_", img_name)  # 替换为下划线
-        img_path = self._path + "\\" + img_name + ".jpeg"
-        if not os.path.exists(img_path):
-            print(img_path)        
+        emtpy_img = self._path + "\\" + img_name + ".jpeg"
+        prefix = emtpy_img.split(".")[0]
+        suffix = emtpy_img.split(".")[1]
+        dest_file = prefix + "_" + tag + "." + suffix
+        return emtpy_img, dest_file
+
+    def generate_empty_image(self, emtpy_img):
+        if not os.path.exists(emtpy_img):
             # "white"
             img = Image.new('RGB', self._img_size, self._fill)
             # img.show()
-            img.save(img_path, "JPEG")
+            img.save(emtpy_img, "JPEG")
             img.close()
         else:
-            print("File already exists: {}".format(img_path))
-        return img_path
+            print("File already exists: {}".format(emtpy_img))
 
     def run(self):       
-        img_path = self.generate_blank_image()
-        font_type = self._font
-        
+        emtpy_img, dest_file = self.generate_src_dest_name(self._font)
+        if os.path.exists(dest_file):
+            return True
+        self.generate_empty_image(emtpy_img)       
         font_size = None
         if self._font_size == "adapted":
             font_size = self._img_size[0]//8//10*10 # 512:60 256:30
         elif int(self._font_size):
-            font_size = int(self._font_size)
-        
-        src_file = img_path
-        prefix = src_file.split(".")[0].replace("_orig", "")
-        suffix = src_file.split(".")[1]
-        dest_file = prefix + "_" + font_type + "." + suffix
-        water_mark_pic = self.add_water_mark(img_path, dest_file, self._quotes, font_type = font_type, font_size = font_size, font_color=self._point)
-        os.remove(img_path)
+            font_size = int(self._font_size)        
+        self.add_water_mark(emtpy_img, dest_file, self._quotes, font_type = self._font, font_size = font_size, font_color=self._point)
+        os.remove(emtpy_img)
+        return True
     
     def add_water_mark(self, src_file, dest_file, water_mark_text, font_type = "YaHei", font_size = 20, font_color=(0, 0, 0)):
             from PIL import Image
             from PIL import ImageDraw
             from PIL import ImageFont
-            #if os.path.exists(dest_file):
-            #    return dest_file
-            
             # set the font
             if font_type == "YaHei":
                 font_type = "C:\\Windows\\Fonts\\msyhbd.ttc"
@@ -277,10 +275,15 @@ def remove_number_from_list(old_list):
     return l
 
 if __name__ == "__main__":
-    l = get_quotes_from_file("CelebrityQuotes.txt")
+    print("Start...")
+    txt_file = "CelebrityQuotes.txt"
+    print("Read from file: {}".format(txt_file))
+    l = get_quotes_from_file(txt_file)
     l = remove_number_from_list(l)
+    print("Start generating quotes emoticons.")
     for quotes_str in l:
         quotes = Quotes(quotes_str)
         # (238, 238, 237) wechat background
         quotes.load_config(font="SourceHanSerif", fontSize="adapted", point="black", fill = (238,238,237), imgSize = (512, 512))
         quotes.run()
+    print("Finished.")
