@@ -1,3 +1,13 @@
+# image files
+*.jpeg
+*.jpg
+*.png
+
+# Font files
+*.ttf
+*.ttc
+！SourceHanSerif-Bold.ttc
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
