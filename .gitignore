@@ -1,3 +1,7 @@
+# OUTPUT
+Release/*
+!Release/quotes_emoticons_generator.7z
+
 # image files
 *.jpeg
 *.jpg
