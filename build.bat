@@ -2,8 +2,8 @@
 rd /s /q Release
 md Release
 
-copy SourceHanSerif-Bold.ttc Release
-copy CelebrityQuotes.txt     Release
+xcopy CelebrityQuotes.txt Release\ /y /i /q /d
+xcopy SourceHanSerif-Bold.ttc Release\ /y /i /q /d
 
 pyinstaller  -F -i quotes_emoticons_generator.ico quotes_emoticons_generator.py
 move /y dist\quotes_emoticons_generator.exe Release\quotes_emoticons_generator.exe
@@ -21,6 +21,16 @@ del /q quotes_emoticons_generator.spec
 rd /s /q dist
 
 
-echo "********************succeed********************"
+echo "********************build succeed********************"
+
+cd Release
+.\quotes_emoticons_generator.exe
+
+cd ..
+xcopy "%USERPROFILE%\Pictures\quotes_emoticons" Release\quotes_emoticons /s /y /i /q /d
+
+
+"C:\Program Files\7-Zip\7z.exe" a quotes_emoticons_generator.7z Release
+move /y quotes_emoticons_generator.7z Release\quotes_emoticons_generator.7z
 
 pause

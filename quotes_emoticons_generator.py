@@ -53,6 +53,7 @@ class Quotes():
         self._point = None
         self._fill = None
         self._img_size = None
+        self._font_type = None
         
     def generate_src_dest_name(self, tag):
         img_name, *others = self._quotes.splitlines()
@@ -86,14 +87,114 @@ class Quotes():
             font_size = self._img_size[0]//8//10*10 # 512:60 256:30
         elif int(self._font_size):
             font_size = int(self._font_size)        
-        self.add_water_mark(emtpy_img, dest_file, self._quotes, font_type = self._font, font_size = font_size, font_color=self._point)
+        self.add_water_mark(emtpy_img, dest_file, self._quotes, font_type = self._font, font_size = font_size, font_color = self._point)
         os.remove(emtpy_img)
-        return True
+        return True     
+
+    # 输入: 文字, 字体大小, 图片宽度
+    # 输出: 处理后的文字, 处理后的文字所占宽度, 高度.
+    def text_processing(self, text, font_size, width, row_height_factor):
+        font_count_max = 0
+        line_count_max = width // font_size * 2
+        # Calculate the pixel size of the string
+        # hans_total = 0
+        # punctuation_count = 0
+        count = 0
+        new_str = list()
+        line_flag = False
+        text = text.replace('\n\n', '\n').replace(' —— ', '  —— ')
+        for s in text:
+            '''
+            # There are actually many Chinese characters, but almost none of them are used. This range is sufficient
+            if '\u4e00' <= s <= '\u9fef':
+                hans_total += 1
+            '''
+            if s.isascii(): # 255以下
+                count += 1
+            elif s == '《' or s == "。":
+                count += 1
+                print(s)
+            elif s == '·':
+                count += 0
+            else:
+                count += 2
+            if count >= line_count_max - 1:
+                s += '\n'
+                count = 0
+                line_flag = True
+            new_str.append(s)
+        if line_flag:
+            count = line_count_max
+        font_count = count
+        if font_count > font_count_max:
+            font_count_max = font_count
+        text = "".join(new_str)
+        text = text.strip('\n')
+
+        text_width = font_count_max * font_size // 2
+
+        lines = len(text.split('\n'))           
+        row_height = font_size * row_height_factor
+        import math
+        text_height = math.ceil(font_size * lines + row_height * (lines - 1))
+        return text, text_width, text_height
     
-    def add_water_mark(self, src_file, dest_file, water_mark_text, font_type = "YaHei", font_size = 20, font_color=(0, 0, 0)):
+    def wrod_processing(self, water_mark_text, img, font_size, font_color):
+            # water_mark_text
+            # first, *items = water_mark_text.splitlines()
+
+        items = water_mark_text.splitlines()
+        # 输入: 文字, 字体大小, 图片宽度
+        # 输出: 处理后的文字, 处理后的文字所占宽度, 高度.
+        row_height_factor   = 0.23
+        quotes_font_size = int(font_size)
+        provenance_font_size = int(font_size*0.7)
+        copy_right_font_size = int(font_size*0.3)
+
+        quotes,     w1, h1  = self.text_processing(items[0],       quotes_font_size,      img.width, row_height_factor)
+        provenance, w2, h2  = self.text_processing(items[1],       provenance_font_size,  img.width, row_height_factor)
+        copy_right, w3, h3  = self.text_processing("HDC Produced.", copy_right_font_size, img.width, row_height_factor)
+
+
+        h1_h2_row = quotes_font_size*row_height_factor*3
+        height1 = int((img.height-(h1+h2+h1_h2_row))/2)
+        if height1 < 0:
+            height1 = 0
+
+        width1 = int((img.width - w1) / 2)
+        if width1 < 0:
+            width1 = 10
+        width2 = int((img.width - w2) / 2)
+        if width2 < 0:
+            width2 = 10
+        # left alignment.
+        width1 = int(quotes_font_size/4)
+        width2 = int(provenance_font_size/5)
+        quotes_xy =     (width1, height1)
+        provenance_xy = (width2, int((height1+h1+h1_h2_row)))
+        copyright_xy =  (int(width2+provenance_font_size*6), int(provenance_xy[1]+provenance_font_size*row_height_factor*2))
+        #print("quotes_xy={}".format(quotes_xy))
+        #print("provenance_xy={}".format(provenance_xy))
+        #print("copyright_xy={}".format(copyright_xy))
+
+        print(quotes)
+        print(provenance)
+
+        from PIL import ImageFont
+        quotes_font     = ImageFont.truetype(self._font_type, quotes_font_size)
+        provenance_font = ImageFont.truetype(self._font_type, provenance_font_size)
+        copyright_font  = ImageFont.truetype(self._font_type, copy_right_font_size)
+        # 
+        quotes_dict     = {"text": quotes,     "xy": quotes_xy,     "font": quotes_font,     "point_color": font_color }
+        provenance_dict = {"text": provenance, "xy": provenance_xy, "font": provenance_font, "point_color": (60,60,60) }
+        copyright_dict  = {"text": copy_right, "xy": copyright_xy,  "font": copyright_font,  "point_color": (250,250,250)}
+        # print("Add watermark: \n{}".format(water_mark_t))
+        return quotes_dict, provenance_dict, copyright_dict
+    
+    def add_water_mark(self, src_file, dest_file, water_mark_text, font_type = "YaHei", font_size=20, font_color=(0, 0, 0)):
             from PIL import Image
             from PIL import ImageDraw
-            from PIL import ImageFont
+
             # set the font
             if font_type == "YaHei":
                 font_type = "C:\\Windows\\Fonts\\msyhbd.ttc"
@@ -109,84 +210,19 @@ class Quotes():
                 font_type = "SourceHanSerif-Bold.ttc"
             elif font_type == "SourceHanSans":
                 font_type = "SourceHanSans-Bold.ttc"
-
-
-            font = ImageFont.truetype(font_type, font_size)
+            self._font_type = font_type
 
             # open image
             img = Image.open(src_file)    
             
-            
-            font_count_max = 0
-            # water_mark_text
-            # first, *items = water_mark_text.splitlines()
-            items = water_mark_text.splitlines()
-            
-            water_mark_t = list()
-            line_count_max = img.width // font_size * 2
-
-            for it in items:
-                # Calculate the pixel size of the string
-                # hans_total = 0
-                # punctuation_count = 0
-                count = 0
-                new_str = list()
-                line_flag = False
-                for s in it:
-                    '''
-                    # There are actually many Chinese characters, but almost none of them are used. This range is sufficient
-                    if '\u4e00' <= s <= '\u9fef':
-                        hans_total += 1
-                    '''
-                    if s.isascii(): # 255以下
-                        count += 1
-                    elif s == '《' or s == "。":
-                        count += 1
-                        print(s)
-                    elif s == '·':
-                        count += 0
-                    else:
-                        count += 2
-                    if count >= line_count_max - 1:
-                        s += '\n'
-                        count = 0
-                        line_flag = True
-                    new_str.append(s)
-                if line_flag:
-                    count = line_count_max
-                font_count = count
-                if font_count > font_count_max:
-                    font_count_max = font_count
-                # print("".join(new_str))
-                water_mark_t.append("".join(new_str))
-            text_width = font_count_max * font_size // 2
-            print("text_width: {}".format(text_width))
-
-            width = 10
-            if text_width < img.width:
-                width = (img.width - text_width) // 2
-            print("to left width: {}".format(width))
-
-            water_mark_t = '\n'.join(water_mark_t)
-            water_mark_t = water_mark_t.replace('\n\n', '\n')
-            water_mark_t = water_mark_t.replace(' —— ', '  —— ')
-            
-            lines = len(water_mark_t.split('\n'))           
-            row_height = font_size * 0.23
-            import math
-            text_height = math.ceil(font_size * lines + row_height * (lines - 1))
-            print("text_height: {}".format(text_height))
-            height = (img.height - text_height) // 2
-            if height < 0:
-                height = 0
-            print("to top height: {}".format(height))
+            quotes_dict, provenance_dict, copyright_dict = self.wrod_processing(water_mark_text, img, font_size, font_color)
             # add water mark
+            draw = ImageDraw.Draw(img)          
+            
+            draw.text(quotes_dict.get("xy"), quotes_dict.get("text"), quotes_dict.get("point_color"), font=quotes_dict.get("font"))
+            draw.text(provenance_dict.get("xy"), provenance_dict.get("text"), provenance_dict.get("point_color"), font=provenance_dict.get("font"))
+            draw.text(copyright_dict.get("xy"), copyright_dict.get("text"), copyright_dict.get("point_color"), font=copyright_dict.get("font"))
             draw = ImageDraw.Draw(img)
-            # img.width - font_len
-             
-            draw.text((width, height), water_mark_t, font_color, font=font)
-            draw = ImageDraw.Draw(img)
-            print("Add watermark: \n{}".format(water_mark_t))
 
             # save to destination file
             img.save(dest_file)
