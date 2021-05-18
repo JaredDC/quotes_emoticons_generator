@@ -113,7 +113,6 @@ class Quotes():
                 count += 1
             elif s == '《' or s == "。":
                 count += 1
-                print(s)
             elif s == '·':
                 count += 0
             else:
@@ -188,7 +187,7 @@ class Quotes():
         quotes_dict     = {"text": quotes,     "xy": quotes_xy,     "font": quotes_font,     "point_color": font_color }
         provenance_dict = {"text": provenance, "xy": provenance_xy, "font": provenance_font, "point_color": (60,60,60) }
         copyright_dict  = {"text": copy_right, "xy": copyright_xy,  "font": copyright_font,  "point_color": (250,250,250)}
-        # print("Add watermark: \n{}".format(water_mark_t))
+
         return quotes_dict, provenance_dict, copyright_dict
     
     def add_water_mark(self, src_file, dest_file, water_mark_text, font_type = "YaHei", font_size=20, font_color=(0, 0, 0)):

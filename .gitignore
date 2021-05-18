@@ -1,6 +1,6 @@
 # OUTPUT
 Release/*
-!Release/quotes_emoticons_generator.7z
+# !Release/quotes_emoticons_generator.7z
 quotes_emoticons/
 CelebrityQuotes.txt
 
