@@ -81,17 +81,12 @@ class Quotes():
         emtpy_img, dest_file = self.generate_src_dest_name(self._font)
         if os.path.exists(dest_file):
             return True
-        self.generate_empty_image(emtpy_img)       
-        font_size = None
-        if self._font_size == "adapted":
-            font_size = self._img_size[0]//8//10*10 # 512:60 256:30
-        elif int(self._font_size):
-            font_size = int(self._font_size)        
-        self.add_water_mark(emtpy_img, dest_file, self._quotes, font_type = self._font, font_size = font_size, font_color = self._point)
+        self.generate_empty_image(emtpy_img)
+        self.add_water_mark(emtpy_img, dest_file, self._quotes, font_type = self._font, font_size=self._font_size, font_color = self._point)
         os.remove(emtpy_img)
         return True     
 
-    # 输入: 文字, 字体大小, 图片宽度
+    # 输入: 文字, 字体大小, 图片宽度， 行宽因子
     # 输出: 处理后的文字, 处理后的文字所占宽度, 高度.
     def text_processing(self, text, font_size, width, row_height_factor):
         font_count_max = 0
@@ -139,12 +134,14 @@ class Quotes():
         return text, text_width, text_height
     
     def wrod_processing(self, water_mark_text, img, font_size, font_color):
-            # water_mark_text
-            # first, *items = water_mark_text.splitlines()
-
         items = water_mark_text.splitlines()
-        # 输入: 文字, 字体大小, 图片宽度
-        # 输出: 处理后的文字, 处理后的文字所占宽度, 高度.
+        quotes_len = len(items[0])       
+        if quotes_len > 60:
+            font_size = 40
+            print("length of quotes: {}, readjust font_size to: {}.\n".format(quotes_len, font_size))
+        elif quotes_len > 40:
+            font_size = 50
+            print("length of quotes: {}, readjust font_size to: {}.\n".format(quotes_len, font_size))
         row_height_factor   = 0.23
         quotes_font_size = int(font_size)
         provenance_font_size = int(font_size*0.7)
@@ -254,10 +251,13 @@ class Quotes():
             print("Create default config.ini file.")
             os.system( "attrib +h " + config_file) # hide config.ini
         self._font = font
-        self._font_size = fontSize
+        self._img_size = imgSize
+        if fontSize == "adapted":
+            self._font_size = self._img_size[0]//8//10*10 # 512:60 256:30
+        elif int(fontSize):
+            self._font_size = int(fontSize)
         self._point = point
         self._fill = fill
-        self._img_size = imgSize
 
 
 def get_quotes_from_file(path):
