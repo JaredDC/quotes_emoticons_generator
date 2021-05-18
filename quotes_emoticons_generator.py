@@ -47,7 +47,7 @@ class Quotes():
             os.makedirs(path)
             print("mkdir path: %s" % path)
         self._path = path
-        self._quotes = quotes
+        self._quotes = quotes.splitlines()
         self._font = None
         self._font_size = None
         self._point = None
@@ -56,7 +56,7 @@ class Quotes():
         self._font_type = None
         
     def generate_src_dest_name(self, tag):
-        img_name, *others = self._quotes.splitlines()
+        img_name = self._quotes[0]
         img_name = img_name.strip('\n')
         import re
         rstr = r"[\/\\\:\*\?\"\<\>\| ]"  # '/ \ : * ? " < > |'
@@ -133,15 +133,8 @@ class Quotes():
         text_height = math.ceil(font_size * lines + row_height * (lines - 1))
         return text, text_width, text_height
     
-    def wrod_processing(self, water_mark_text, img, font_size, font_color):
-        items = water_mark_text.splitlines()
-        quotes_len = len(items[0])       
-        if quotes_len > 60:
-            font_size = 40
-            print("length of quotes: {}, readjust font_size to: {}.\n".format(quotes_len, font_size))
-        elif quotes_len > 40:
-            font_size = 50
-            print("length of quotes: {}, readjust font_size to: {}.\n".format(quotes_len, font_size))
+    def wrod_processing(self, water_mark_text_list, img, font_size, font_color):
+        items = water_mark_text_list
         row_height_factor   = 0.23
         quotes_font_size = int(font_size)
         provenance_font_size = int(font_size*0.7)
@@ -253,7 +246,14 @@ class Quotes():
         self._font = font
         self._img_size = imgSize
         if fontSize == "adapted":
-            self._font_size = self._img_size[0]//8//10*10 # 512:60 256:30
+            quotes_len = len(self._quotes[0])
+            words_per_line = 8
+            if quotes_len > 60:
+                words_per_line = 12
+            elif quotes_len > 40:
+                words_per_line = 10
+            self._font_size = self._img_size[0]//words_per_line//10*10
+            # print("Mode:\"adapted\". font_size={}.\n".format(self._font_size))
         elif int(fontSize):
             self._font_size = int(fontSize)
         self._point = point
